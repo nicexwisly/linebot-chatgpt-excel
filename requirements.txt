@@ -1,0 +1,5 @@
+flask
+pandas
+openai
+line-bot-sdk
+openpyxl
