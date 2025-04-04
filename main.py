@@ -36,15 +36,17 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    print("📩 ได้รับข้อความจาก LINE แล้ว")
-
     user_text = event.message.text
-    print("💬 ข้อความที่ผู้ใช้ส่งมา:", user_text)
 
+    # ✅ ตอบกลับเร็วทันทีเพื่อกัน timeout
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text="กำลังประมวลผลข้อมูล... โปรดรอสักครู่")
+    )
+
+    # ❗ ส่วนนี้คือประมวลผลจริง (อยู่นอก reply)
     try:
         df = pd.read_excel(EXCEL_PATH)
-        print("📊 อ่าน Excel สำเร็จ")
-
         data_preview = df.head(10).to_string(index=False)
 
         prompt = f"""ฐานข้อมูล:
@@ -53,8 +55,6 @@ def handle_message(event):
 คำถามจากผู้ใช้: {user_text}
 ช่วยสรุปข้อมูลหรือให้คำตอบให้เข้าใจง่าย"""
 
-        print("🤖 ส่ง prompt ไปหา ChatGPT แล้ว")
-
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
@@ -62,16 +62,18 @@ def handle_message(event):
         )
 
         reply = response.choices[0].message['content'].strip()
-        print("✅ ได้ข้อความตอบกลับจาก AI:", reply)
+
+        # ✅ ส่งข้อความ AI ตามหลังด้วย push_message
+        line_bot_api.push_message(
+            event.source.user_id,
+            TextSendMessage(text=reply)
+        )
 
     except Exception as e:
-        reply = f"เกิดข้อผิดพลาด: {str(e)}"
-        print("❌ ERROR:", str(e))
-
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=reply)
-    )
+        line_bot_api.push_message(
+            event.source.user_id,
+            TextSendMessage(text=f"เกิดข้อผิดพลาด: {str(e)}")
+        )
 
 if __name__ == "__main__":
     app.run()
