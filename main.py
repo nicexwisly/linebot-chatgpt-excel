@@ -23,12 +23,13 @@ def callback():
     signature = request.headers['X-Line-Signature']
     body = request.get_data(as_text=True)
 
-    print("📨 LINE ส่ง Webhook เข้ามาแล้ว")  # <== บรรทัดนี้ช่วย debug สำคัญมาก
+    print("📨 LINE webhook เข้ามาแล้ว")
 
     try:
         handler.handle(body, signature)
+        print("✅ handler.handle สำเร็จ")
     except InvalidSignatureError:
-        print("❌ ลายเซ็นไม่ถูกต้อง")
+        print("❌ Signature ไม่ถูกต้อง")
         abort(400)
 
     return 'OK'
